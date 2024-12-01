@@ -19,7 +19,10 @@ A responsive blogging platform built with Python's Flask framework and Bootstrap
    ```bash
    git clone https://github.com/mhrafin/Blogging-Website.git
    cd Blogging-Website
-2. Run the application:
+2. Install the required dependencies
+   ```bash
+   pip install -r requirements.txt
+3. Run the application:
    ```bash
    python3 main.py
-3. Open your browser and navigate to http://127.0.0.1:5000
+4. Open your browser and navigate to http://127.0.0.1:5002
