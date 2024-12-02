@@ -106,9 +106,9 @@ class Comment(db.Model):
     parent_post: Mapped["BlogPost"] = relationship(back_populates="comments")
 
 
-with app.app_context():
-    db.create_all()
-    pass
+# with app.app_context():
+#     db.create_all()
+#     pass
 
 
 def admin_only(f):
@@ -144,8 +144,8 @@ def register():
             name=request.form.get("name"),
             email=request.form.get("email"),
             password=generate_password_hash(
-                request.form.get("password"), method="pbkdf2"
-            ).decode("utf-8"),
+                request.form.get("password"), method="pbkdf2", salt_length=8
+            ),
         )
         db.session.add(new_user)
         db.session.commit()
