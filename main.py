@@ -107,7 +107,7 @@ class Comment(db.Model):
 
 
 with app.app_context():
-    # db.create_all()
+    db.create_all()
     pass
 
 
@@ -145,7 +145,7 @@ def register():
             email=request.form.get("email"),
             password=generate_password_hash(
                 request.form.get("password"), method="pbkdf2"
-            ),
+            ).decode("utf-8"),
         )
         db.session.add(new_user)
         db.session.commit()
