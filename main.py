@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect, url_for
 from datetime import date
 import requests as req
 
@@ -21,9 +21,17 @@ def about():
     return render_template("about.html", current_year=current_year)
 
 
-@app.route("/contact")
+@app.route("/contact", methods=["GET", "POST"])
 def contact():
-    return render_template("contact.html", current_year=current_year)
+    if request.method == "POST":
+        name = request.form.get("name")
+        email = request.form.get("email")
+        phone = request.form.get("phone")
+        message = request.form.get("message")
+        print(name, email, phone, message)
+        return render_template("contact.html", current_year=current_year, msg_sent=True)
+    return render_template("contact.html", current_year=current_year, msg_sent=False)
+
 
 @app.route("/post/<int:id>")
 def get_post(id):
