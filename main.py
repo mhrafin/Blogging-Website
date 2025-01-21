@@ -1,14 +1,15 @@
 from flask import Flask, render_template
+from datetime import date
+
+current_year = date.today().year
 
 app = Flask(__name__)
 
 
-@app.route('/')
+@app.route("/")
 def home():
-    return "Hello World!"
+    return render_template("index.html", current_year=current_year)
 
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
