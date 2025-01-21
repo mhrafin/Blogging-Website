@@ -12,15 +12,15 @@ def home():
     return render_template("index.html", current_year=current_year)
 
 
-@app.route("/blog")
-def get_blog():
+@app.route("/blog/<int:id>")
+def get_blog(id):
     data_url = "https://api.npoint.io/c790b4d5cab58020d391"
 
     res = req.get(data_url)
 
     data = res.json()
 
-    return render_template("blog.html", posts=data)
+    return render_template("blog.html", posts=data, id=id)
 
 
 

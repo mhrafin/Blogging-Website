@@ -7,7 +7,7 @@
 </head>
 <body>
     {% for post in posts: %}
-    {% if post["id"] == 2 %}
+    {% if post["id"] == id %}
     <h1>{{ post["title"] }}</h1>
     <h2>{{ post["subtitle"]}}</h2>
     {% endif %}
