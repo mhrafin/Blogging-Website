@@ -4,6 +4,9 @@ from datetime import date
 import requests as req
 from dotenv import load_dotenv
 from flask import Flask, redirect, render_template, request, url_for
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import Date, Integer, String, Text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 import email_sender
 
@@ -15,7 +18,39 @@ my_password = os.getenv("MY_PASSWORD")
 current_year = date.today().year
 data_url = "https://api.npoint.io/ee84059f6d2a9704021f"
 
+
+# Initialize Flask-Sqlalchemy
+class Base(DeclarativeBase):
+    pass
+
+
+db = SQLAlchemy(model_class=Base)
+
+# Create the app
 app = Flask(__name__)
+
+# Configure the flask-sqlalchemy
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///posts.db"
+db.init_app(app)
+
+
+# Define Models
+class Post(db.Model):
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, nullable=False
+    )  # If not work use Integer on mapped_column
+    title: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    subtitle: Mapped[str] = mapped_column(String, nullable=False)
+    date: Mapped[str] = mapped_column(String, nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    author: Mapped[str] = mapped_column(String, nullable=False)
+    img_url: Mapped[str] = mapped_column(String, nullable=False)
+    
+
+
+# Create the Tables
+with app.app_context():
+    db.create_all()
 
 
 def send_msg(name: str, email: str, phone: str, msg: str):
