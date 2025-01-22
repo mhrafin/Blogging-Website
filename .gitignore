@@ -1,3 +1,6 @@
 .venv
 *.code-workspace
 changelog.md
+ruff.toml
+.env
+__pycache__
