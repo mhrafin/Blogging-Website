@@ -69,7 +69,9 @@ def home():
     res = req.get(data_url)
     data = res.json()
 
-    return render_template("index.html", current_year=current_year, posts=data)
+    posts = db.session.execute(db.select(Post)).scalars()
+
+    return render_template("index.html", current_year=current_year, posts=posts)
 
 
 @app.route("/about")
@@ -92,14 +94,14 @@ def contact():
 
 @app.route("/post/<int:id>")
 def get_post(id):
-    res = req.get(data_url)
-    data = res.json()
-    the_post = None
-    for post in data:
-        if post["id"] == id:
-            the_post = post
-    return render_template("post.html", current_year=current_year, post=the_post)
+    post = db.session.execute(db.select(Post).where(Post.id == id)).scalar()
+    return render_template("post.html", current_year=current_year, post=post)
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+
+
+
