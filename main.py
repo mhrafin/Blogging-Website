@@ -130,9 +130,7 @@ def new_post():
         db.session.add(new_blogpost)
         db.session.commit()
 
-        return redirect(
-            "/",
-        )
+        return redirect("/")
 
     return render_template("make-post.html", current_year=current_year, form=form)
 
@@ -168,6 +166,15 @@ def edit_post(id):
         is_edit=True,
         article_body=article_body,
     )
+
+
+@app.route("/delete-post/<int:id>")
+def delete_post(id):
+    post = db.session.execute(db.select(Post).where(Post.id == id)).scalar()
+    db.session.delete(post)
+    db.session.commit()
+
+    return redirect("/")
 
 
 if __name__ == "__main__":
