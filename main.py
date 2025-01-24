@@ -1,20 +1,31 @@
 import os
+import secrets
 from datetime import date
 
 from dotenv import load_dotenv
-from flask import Flask, redirect, render_template, request
+from flask import Flask, flash, redirect, render_template, request
 from flask_ckeditor import CKEditor, CKEditorField
 from flask_ckeditor.utils import cleanify
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+    user_logged_in,
+)
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from sqlalchemy import Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from wtforms import StringField, SubmitField, URLField
-from wtforms.validators import URL, DataRequired
+from werkzeug.security import check_password_hash, generate_password_hash
+from wtforms import EmailField, PasswordField, StringField, SubmitField, URLField
+from wtforms.validators import URL, DataRequired, Email
 
 import email_sender
 
-SECRET_KEY = os.urandom(32)
+SECRET_KEY = secrets.token_hex()
 
 load_dotenv()
 
@@ -28,7 +39,7 @@ data_url = "https://api.npoint.io/ee84059f6d2a9704021f"
 # Create the app
 app = Flask(__name__)
 ## Configure the app
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///posts.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///blog.db"
 app.config["SECRET_KEY"] = SECRET_KEY
 
 
@@ -54,12 +65,30 @@ class Post(db.Model):
     img_url: Mapped[str] = mapped_column(String, nullable=False)
 
 
+class User(db.Model, UserMixin):
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, nullable=False, autoincrement=True
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
 ### Create the Tables
 with app.app_context():
     db.create_all()
 
 # Initialize flask-ckeditor
 ckeditor = CKEditor(app)
+
+# Configure flask-login
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
 
 
 # Forms
@@ -70,6 +99,20 @@ class NewPostForm(FlaskForm):
     img_url = URLField("Blog Image URL", validators=[DataRequired(), URL()])
     body = CKEditorField("Blog Content", validators=[DataRequired()])
     submit = SubmitField("Submit")
+
+
+class RegisterForm(FlaskForm):
+    name = StringField("Your Name", validators=[DataRequired()])
+    email = EmailField("Your Email", validators=[DataRequired(), Email()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    password_again = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Register")
+
+
+class LoginForm(FlaskForm):
+    email = EmailField("Email", validators=[DataRequired(), Email()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Login")
 
 
 def send_msg(name: str, email: str, phone: str, msg: str):
@@ -88,6 +131,67 @@ def home():
     posts = db.session.execute(db.select(Post)).scalars()
 
     return render_template("index.html", current_year=current_year, posts=posts)
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    form = RegisterForm()
+    # print("Method:", request.method)
+    # print("Form data:", form.data)
+    # print("Form errors:", form.errors)
+    # print("Validate:", form.validate())
+    # print("Validate on submit:", form.validate_on_submit())
+    if form.validate_on_submit():
+        pass1 = form.data.get("password")
+        pass2 = form.data.get("password_again")
+        if pass1 != pass2:
+            return redirect("/register")
+
+        name = form.data.get("name")
+        email = form.data.get("email")
+        user = db.session.execute(db.select(User).where(User.email == email)).scalar()
+        if user:
+            flash("Account already exists! Try Logging in.")
+            return redirect("login")
+        password = generate_password_hash(
+            password=pass1, method="pbkdf2:sha256:600000", salt_length=8
+        )
+        new_user = User(name=name, email=email, password=password)
+        db.session.add(new_user)
+        db.session.commit()
+        login_user(new_user)
+        return redirect("/")
+    return render_template("register.html", current_year=current_year, form=form)
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        email = form.data.get("email")
+        print(email)
+        user = db.session.execute(db.select(User).where(User.email == email)).scalar()
+        print(user)
+        if not user:
+            flash("No account on this email exists!")
+            return render_template("login.html", current_year=current_year, form=form)
+
+        password = form.data.get("password")
+        if check_password_hash(pwhash=user.password, password=password):
+            login_user(user)
+            return redirect("/")
+        else:
+            flash("Incorrect Password!")
+            return render_template("login.html", current_year=current_year, form=form)
+
+    return render_template("login.html", current_year=current_year, form=form)
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect("/")
 
 
 @app.route("/about")

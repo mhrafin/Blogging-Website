@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% macro show_errors(field) %}
+{% for err in field.errors %}
+{% if request.method == 'POST' %}
+<span style="color:rgb(177, 0, 59)">{{err}}</span>
+{% endif %}
+{% endfor %}
+{% endmacro %}
+
+
+<!-- Page Header-->
+<header class="masthead"
+    style="background-image: url('{{ url_for('static', filename='assets/img/register-bg.jpg') }}')">
+    <div class="container position-relative px-4 px-lg-5">
+        <div class="row gx-4 gx-lg-5 justify-content-center">
+            <div class="col-md-10 col-lg-8 col-xl-7">
+                <div class="site-heading">
+                    <h1>Register</h1>
+                    <span class="subheading">To voice your opinions!</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+<main class="mb-4">
+    <div class="container px-4 px-lg-5">
+        <div class="row gx-4 gx-lg-5 justify-content-center">
+            <div class="col-md-10 col-lg-8 col-xl-7">
+                <h2 class="text-uppercase text-center mb-5">Create an account</h2>
+
+                <form method="post" , action="{{ url_for('register')}}" novalidate>
+                    {{ form.csrf_token }}
+                    <div data-mdb-input-init class="form-outline mb-4">
+                        {{form.name.label(class="form-label", for="name")}}
+                        {{ form.name(id="name", class="form-control form-control-lg")}}
+                        {{ show_errors(form.name) }}
+
+                    </div>
+
+                    <div data-mdb-input-init class="form-outline mb-4">
+                        {{ form.email.label(class="form-label", for="email") }}
+                        {{ form.email(id="email", class="form-control form-control-lg") }}
+                        {{ show_errors(form.email) }}
+                    </div>
+
+                    <div data-mdb-input-init class="form-outline mb-4">
+                        {{ form.password.label(class="form-label", for="password") }}
+                        {{ form.password(id="password", class="form-control form-control-lg") }}
+                        {{ show_errors(form.password) }}
+                    </div>
+
+                    <div data-mdb-input-init class="form-outline mb-4">
+                        {{ form.password_again.label(class="form-label", for="password_again") }}
+                        {{ form.password_again(id="password_again", class="form-control form-control-lg") }}
+                        {{ show_errors(form.password_again) }}
+                    </div>
+
+
+                    <div class="d-flex justify-content-center">
+
+                        {{ form.submit(class="btn btn-success")}}
+                    </div>
+
+
+
+                </form>
+                <p class="text-center text-muted mt-5 mb-0">Have already an account? <a href="{{ url_for('login')}}"
+                        class="fw-bold text-body"><u>Login here</u></a></p>
+            </div>
+        </div>
+    </div>
+
+
+    {% endblock content %}
