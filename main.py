@@ -143,5 +143,32 @@ def get_post(id):
     return render_template("post.html", current_year=current_year, post=post)
 
 
+@app.route("/edit-post/<int:id>", methods=["GET", "POST"])
+def edit_post(id):
+    post = db.session.execute(db.select(Post).where(Post.id == id)).scalar()
+    form = NewPostForm()
+    form.title.data = post.title
+    form.subtitle.data = post.subtitle
+    form.author.data = post.author
+    form.img_url.data = post.img_url
+    article_body = post.body
+    if form.validate_on_submit():
+        post.title = form.data.get("title")
+        post.subtitle = form.data.get("subtitle")
+        post.author = form.data.get("author")
+        post.img_url = form.data.get("img_url")
+        post.body = cleanify(form.body.data)
+        db.session.commit()
+        return redirect(f"/post/{id}")
+    return render_template(
+        "make-post.html",
+        current_year=current_year,
+        post=post,
+        form=form,
+        is_edit=True,
+        article_body=article_body,
+    )
+
+
 if __name__ == "__main__":
     app.run(debug=True)
