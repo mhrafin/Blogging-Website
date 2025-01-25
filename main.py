@@ -1,9 +1,11 @@
 import os
 import secrets
 from datetime import date
+from functools import wraps
+from typing import List
 
 from dotenv import load_dotenv
-from flask import Flask, flash, redirect, render_template, request
+from flask import Flask, abort, flash, redirect, render_template, request
 from flask_ckeditor import CKEditor, CKEditorField
 from flask_ckeditor.utils import cleanify
 from flask_login import (
@@ -17,8 +19,8 @@ from flask_login import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
-from sqlalchemy import Integer, String, Text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 from wtforms import EmailField, PasswordField, StringField, SubmitField, URLField
 from wtforms.validators import URL, DataRequired, Email
@@ -63,6 +65,8 @@ class Post(db.Model):
     body: Mapped[str] = mapped_column(Text, nullable=False)
     author: Mapped[str] = mapped_column(String, nullable=False)
     img_url: Mapped[str] = mapped_column(String, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    user: Mapped["User"] = relationship(back_populates="posts")
 
 
 class User(db.Model, UserMixin):
@@ -72,6 +76,7 @@ class User(db.Model, UserMixin):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(100), nullable=False)
+    posts: Mapped[List["Post"]] = relationship(back_populates="user")
 
 
 ### Create the Tables
@@ -113,6 +118,18 @@ class LoginForm(FlaskForm):
     email = EmailField("Email", validators=[DataRequired(), Email()])
     password = PasswordField("Password", validators=[DataRequired()])
     submit = SubmitField("Login")
+
+
+def admin_only(f):
+    
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if current_user.id == 1:
+            return f(*args, **kwargs)
+        else:
+            return abort(403)
+
+    return wrapper
 
 
 def send_msg(name: str, email: str, phone: str, msg: str):
@@ -213,6 +230,8 @@ def contact():
 
 
 @app.route("/new-post", methods=["GET", "POST"])
+@login_required
+@admin_only
 def new_post():
     form = NewPostForm()
     # print("CKEditor body:", request.form.get('body'))
@@ -228,6 +247,7 @@ def new_post():
         new_blogpost.subtitle = form.data.get("subtitle")
         new_blogpost.date = today
         new_blogpost.author = form.data.get("author")
+        new_blogpost.user_id = current_user.id
         new_blogpost.img_url = form.data.get("img_url")
         new_blogpost.body = cleanify(form.body.data)
 
@@ -246,6 +266,8 @@ def get_post(id):
 
 
 @app.route("/edit-post/<int:id>", methods=["GET", "POST"])
+@login_required
+@admin_only
 def edit_post(id):
     post = db.session.execute(db.select(Post).where(Post.id == id)).scalar()
     form = NewPostForm()
@@ -273,6 +295,8 @@ def edit_post(id):
 
 
 @app.route("/delete-post/<int:id>")
+@login_required
+@admin_only
 def delete_post(id):
     post = db.session.execute(db.select(Post).where(Post.id == id)).scalar()
     db.session.delete(post)

@@ -26,8 +26,11 @@
                 </a>
                 <p class="post-meta">
                     Posted by
-                    <a href="#!">{{ post.author }}</a>
-                    on {{ post.date }} <a href="{{ url_for('delete_post', id=post.id)}}">✘</a>
+                    <a href="#!">{{ post.user.name }}</a>
+                    on {{ post.date }}
+                    {% if current_user.id == 1 %}
+                    <a href="{{ url_for('delete_post', id=post.id)}}">✘</a>
+                    {% endif %}
                 </p>
             </div>
             <!-- Divider-->
@@ -37,9 +40,11 @@
             <!-- Pager-->
             <!-- <div class="d-flex justify-content-end mb-4"><a class="btn btn-primary text-uppercase" href="#!">Older Posts
                     →</a></div> -->
+            {% if current_user.id == 1 %}
             <div class="d-flex justify-content-end mb-4"><a class="btn btn-primary text-uppercase"
                     href="{{ url_for('new_post')}}">Create New Post
                     →</a></div>
+            {% endif %}
         </div>
     </div>
 </div>
