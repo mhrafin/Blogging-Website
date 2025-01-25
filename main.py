@@ -4,13 +4,11 @@ import secrets
 from datetime import date
 from functools import wraps
 from typing import List
-from urllib.parse import urlencode
 
 from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
 from flask_ckeditor import CKEditor, CKEditorField
 from flask_ckeditor.utils import cleanify
-# from flask_gravatar import Gravatar
 from flask_login import (
     LoginManager,
     UserMixin,
@@ -18,7 +16,6 @@ from flask_login import (
     login_required,
     login_user,
     logout_user,
-    user_logged_in,
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
@@ -105,18 +102,6 @@ ckeditor = CKEditor(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-# Initialize gravatar
-# gravatar = Gravatar(
-#     app,
-#     size=100,
-#     rating="g",
-#     default="retro",
-#     force_default=False,
-#     force_lower=False,
-#     use_ssl=False,
-#     base_url=None,
-# )
-
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -173,12 +158,12 @@ def send_msg(name: str, email: str, phone: str, msg: str):
         email_body=f"Name: {name}\nEmail: {email}\nPhone: {phone}\nMessage: {msg}",
     )
 
+
 @app.template_global()
-def gravatar_url(email, size=40, rating='g', default='retro', force_default=False):
-    hash_value = hashlib.md5(email.lower().encode('utf-8')).hexdigest()
+def gravatar_url(email, size=40, rating="g", default="retro", force_default=False):
+    hash_value = hashlib.md5(email.lower().encode("utf-8")).hexdigest()
     gravatar_url = f"https://www.gravatar.com/avatar/{hash_value}?s={size}&d={default}&r={rating}&f={force_default}"
     return gravatar_url
-
 
 
 @app.route("/")
