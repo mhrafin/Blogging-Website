@@ -1,13 +1,16 @@
+import hashlib
 import os
 import secrets
 from datetime import date
 from functools import wraps
 from typing import List
+from urllib.parse import urlencode
 
 from dotenv import load_dotenv
-from flask import Flask, abort, flash, redirect, render_template, request
+from flask import Flask, abort, flash, redirect, render_template, request, url_for
 from flask_ckeditor import CKEditor, CKEditorField
 from flask_ckeditor.utils import cleanify
+# from flask_gravatar import Gravatar
 from flask_login import (
     LoginManager,
     UserMixin,
@@ -67,6 +70,7 @@ class Post(db.Model):
     img_url: Mapped[str] = mapped_column(String, nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     user: Mapped["User"] = relationship(back_populates="posts")
+    comments: Mapped[List["Comment"]] = relationship(back_populates="post")
 
 
 class User(db.Model, UserMixin):
@@ -77,6 +81,17 @@ class User(db.Model, UserMixin):
     email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(100), nullable=False)
     posts: Mapped[List["Post"]] = relationship(back_populates="user")
+    comments: Mapped[List["Comment"]] = relationship(back_populates=("user"))
+
+
+class Comment(db.Model):
+    __tablename__ = "comments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    text: Mapped[str] = mapped_column(String, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    user: Mapped["User"] = relationship(back_populates="comments")
+    post_id: Mapped[int] = mapped_column(ForeignKey("post.id"))
+    post: Mapped["Post"] = relationship(back_populates="comments")
 
 
 ### Create the Tables
@@ -89,6 +104,18 @@ ckeditor = CKEditor(app)
 # Configure flask-login
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+# Initialize gravatar
+# gravatar = Gravatar(
+#     app,
+#     size=100,
+#     rating="g",
+#     default="retro",
+#     force_default=False,
+#     force_lower=False,
+#     use_ssl=False,
+#     base_url=None,
+# )
 
 
 @login_manager.user_loader
@@ -120,8 +147,12 @@ class LoginForm(FlaskForm):
     submit = SubmitField("Login")
 
 
+class CommentForm(FlaskForm):
+    comment_body = CKEditorField("Comment", validators=[DataRequired()])
+    submit = SubmitField("Submit Comment")
+
+
 def admin_only(f):
-    
     @wraps(f)
     def wrapper(*args, **kwargs):
         if current_user.id == 1:
@@ -141,6 +172,13 @@ def send_msg(name: str, email: str, phone: str, msg: str):
         subject=f"Message from {name}!",
         email_body=f"Name: {name}\nEmail: {email}\nPhone: {phone}\nMessage: {msg}",
     )
+
+@app.template_global()
+def gravatar_url(email, size=40, rating='g', default='retro', force_default=False):
+    hash_value = hashlib.md5(email.lower().encode('utf-8')).hexdigest()
+    gravatar_url = f"https://www.gravatar.com/avatar/{hash_value}?s={size}&d={default}&r={rating}&f={force_default}"
+    return gravatar_url
+
 
 
 @app.route("/")
@@ -259,10 +297,18 @@ def new_post():
     return render_template("make-post.html", current_year=current_year, form=form)
 
 
-@app.route("/post/<int:id>")
+@app.route("/post/<int:id>", methods=["GET", "POST"])
 def get_post(id):
     post = db.session.execute(db.select(Post).where(Post.id == id)).scalar()
-    return render_template("post.html", current_year=current_year, post=post)
+    form = CommentForm()
+    if form.validate_on_submit():
+        new_comment = Comment(
+            text=cleanify(form.comment_body.data), user_id=current_user.id, post_id=id
+        )
+        db.session.add(new_comment)
+        db.session.commit()
+        return redirect(url_for("get_post", id=id))
+    return render_template("post.html", current_year=current_year, post=post, form=form)
 
 
 @app.route("/edit-post/<int:id>", methods=["GET", "POST"])
