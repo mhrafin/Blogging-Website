@@ -302,11 +302,6 @@ def get_post(id):
 def edit_post(id):
     post = db.session.execute(db.select(Post).where(Post.id == id)).scalar()
     form = NewPostForm()
-    form.title.data = post.title
-    form.subtitle.data = post.subtitle
-    form.author.data = post.author
-    form.img_url.data = post.img_url
-    article_body = post.body
     if form.validate_on_submit():
         post.title = form.data.get("title")
         post.subtitle = form.data.get("subtitle")
@@ -315,6 +310,13 @@ def edit_post(id):
         post.body = cleanify(form.body.data)
         db.session.commit()
         return redirect(f"/post/{id}")
+    
+    form.title.data = post.title
+    form.subtitle.data = post.subtitle
+    form.author.data = post.author
+    form.img_url.data = post.img_url
+    article_body = post.body
+    
     return render_template(
         "make-post.html",
         current_year=current_year,

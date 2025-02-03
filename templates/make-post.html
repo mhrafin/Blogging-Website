@@ -34,7 +34,7 @@
         <div class="row">
             <div class="col-lg-8 col-md-10 mx-auto">
                 {% if is_edit %}
-                <form method="post" action="{{ url_for('edit_post', id=2)}}" novalidate>
+                <form method="post" action="{{ url_for('edit_post', id=post.id)}}" novalidate>
                     {{ form.csrf_token }}
                     <div class="mb-3">
                         {{ form.title.label(class="form-label", for="title") }}
